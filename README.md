@@ -39,11 +39,10 @@ O sistema deve permitir, em tempo razoável, ao usuário:
 O programa foi testado para Python 3.13.15. Não podemos garantir que a execução será exata em outras versões.
 
 1. **Pré-requisitos**
-    - Instale todas as bibliotecas especificadas em requirements.txt abrindo o prompt de comando e digitando:
-        ```pip install -r``` 
+    - Instale todas as bibliotecas especificadas em requirements.txt abrindo o prompt de comando e digitando ```pip install -r``` 
 
 2. **Processamento de Dados**
-Recomendamos pular esta parte e usar os dados que já estão disponibilizados no repositório. Mas caso seja de interesse do usuário obter os dados processados a partir dos dados brutos, siga os passos abaixo.
+(Recomendamos pular esta parte e usar os dados que já estão disponibilizados no repositório. Mas caso seja de interesse do usuário obter os dados processados a partir dos dados brutos, siga os passos abaixo.)
     - Apague todos os arquivos dentro de ```data/processed/```;
     - Acesse o notebook em ```notebooks/data_process.ipynb```;
     - Execute as células uma a uma, em ordem - se desejar, confira a saída de cada uma para ver os passos intermediários;
