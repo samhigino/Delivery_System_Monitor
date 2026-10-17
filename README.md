@@ -40,10 +40,14 @@ O programa foi testado para Python 3.13.15. Não podemos garantir que a execuç�
 
 1. **Pré-requisitos**
     - Instale todas as bibliotecas especificadas em requirements.txt abrindo o prompt de comando e digitando:
-        ```sh pip install -r ``` 
+        ```pip install -r``` 
 
 2. **Processamento de Dados**
 Recomendamos pular esta parte e usar os dados que já estão disponibilizados no repositório. Mas caso seja de interesse do usuário obter os dados processados a partir dos dados brutos, siga os passos abaixo.
-    - 
+    - Apague todos os arquivos dentro de ```data/processed/```;
+    - Acesse o notebook em ```notebooks/data_process.ipynb```;
+    - Execute as células uma a uma, em ordem - se desejar, confira a saída de cada uma para ver os passos intermediários;
+    - Confira se todos os arquivos foram gerados em ```data/processed/``` corretamente. A execução pode levar um tempo.
 
 3. **Execução principal**
+    - Execute o script ```scripts/main.py```;
