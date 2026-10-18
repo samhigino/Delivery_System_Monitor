@@ -113,7 +113,7 @@ class Trie:
     
         return node.is_end
 
-    # Auxiliar para a busca por prefixo
+    # Auxiliar para a busca por prefixo - retorna todas as palavras de uma subárvore
     def get_all_subtree(self, node, lst=list, acc=str):
         for child in node.children.items():
             acc_i = acc + child[1].prefix
