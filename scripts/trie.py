@@ -93,27 +93,75 @@ class Trie:
     def lookup(self, str):
         node = self.root
         i = 0
-
+    
         while i < len(str):
             key = str[i]
             path_exists = key in node.children
-
+    
             if not path_exists:
                 return False
-
+    
             prefix = node.get_child_prefix(key)
             cpl = common_prefix_length(prefix, str[i:])
-
+    
             if cpl < len(prefix):
                 return False
             else:
                 i += cpl
+                node = node.children[key]
+                continue
+    
+        return node.is_end
+
+    # Auxiliar para a busca por prefixo
+    def get_all_subtree(self, node, lst=list, acc=str):
+        for child in node.children.items():
+            acc_i = acc + child[1].prefix
+            if child[1].is_end:
+                lst.append(acc_i)
+            lst = lst + self.get_all_subtree(child[1], [], acc_i)
+        return lst
+
+    # Realiza uma busca por prefixo para encontrar vários itens
+    def search_many(self, pref):
+        node = self.root
+        i = 0
+        words_found = []
+        cpl = 0
+
+        # Acha o primeiro nó que contém todo o prefixo str
+        while i < len(pref):
+            key = pref[i]
+            path_exists = key in node.children
+        
+            if not path_exists:
+                return words_found
+
+            node = node.children[key]
+            prefix = node.prefix
+            cpl = common_prefix_length(prefix, pref[i:])
+        
+            if cpl < len(prefix):
+                break
+            else:
+                i += cpl
                 continue
 
-        return True
+        acc = pref + node.prefix[cpl:]
+        if node.is_end:
+            words_found.append(acc)
+        words_found = words_found + self.get_all_subtree(node, words_found, acc)
 
-    def search_many(self, str):
-        return
+        return words_found
+
+    # Funções para imprimir a árvore (mais para debug)
+    def print_self(self):
+        self.print_self_recursive(self.root)
+    
+    def print_self_recursive(self, src):
+        print(f"\"{src.prefix}\":", src.children.keys())
+        for key in src.children:
+            self.print_self_recursive(src.children[key])
 
     # Limpa a árvore
     def clear(self, str):
