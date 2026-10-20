@@ -4,6 +4,7 @@ import osmnx as ox
 import plotly.express as px
 import plotly.graph_objects as go
 import delivery_generation as dg
+import geohash as gh
 import numpy as np
 from dash import Input, Output, State, dcc, html
 from shapely.geometry import Point
@@ -61,6 +62,10 @@ cor_cima = "#F39090"
 #Layout do site em HTML
 aplicativo.layout = html.Div(
     children=[
+        dcc.Store(
+            id="geohashes_store",
+            data=[]
+        ),
         dcc.Store(
             id="entregadores_store",
             data=[]
@@ -254,7 +259,7 @@ def distancia_km(latitude_p, longitude_p, latitude_s, longitude_s):   #Calculo d
     return 2 * raio_total * atan2(sqrt(qtroçoéesse), sqrt(1 - qtroçoéesse)) #Coitado de qm teve q pensar isso pela primeira vez
 
 #Função básica que atualiza o mapa de acordo com os estados das estruturas do html
-def atualizar_o_mapa(n_clicks, entregadores, filtro, restaurante_id):
+def atualizar_o_mapa(n_clicks, entregadores, filtro, restaurante_id,geohashes=None):
     #Zoom maior se tiver vendo um restaurante especifico ou toda bh
     if restaurante_id is not None:
         zom = 14
@@ -359,14 +364,73 @@ def atualizar_o_mapa(n_clicks, entregadores, filtro, restaurante_id):
 
         dentro = np.zeros(len(locais), dtype=bool)
 
-        # SUBSTITUIR AQUI PELO GEOHASH TODo, POR ENQUANTO TA USANDO ALGO INEFICIENTE
         if restaurante_id is not None and filtro is not None:
             lat_rest = float(centro["lat"])
             lon_rest = float(centro["lon"])
+            raio = float(filtro)
 
-            for i, (lat_ent, lon_ent) in enumerate(locais):
-                distancia = distancia_km(lat_rest, lon_rest,lat_ent,lon_ent)
-                dentro[i] = distancia <= float(filtro)
+            # Geohash da célula que contém o restaurante
+            hash_rest = gh.geohash_encode(
+                lat_rest, lon_rest, maxlevel=5
+            )
+
+            # Dimensões de uma célula de precisão 5
+            total_bits = 5 * 5
+            lon_bits = (total_bits + 1) // 2
+            lat_bits = total_bits // 2
+
+            largura = 360.0 / (2 ** lon_bits)
+            altura = 180.0 / (2 ** lat_bits)
+
+            # Caixa delimitadora conservadora do raio, em graus
+            alcance_lat = raio / 110.574
+
+            lat_max = min(
+                89.999999,
+                abs(lat_rest) + alcance_lat
+            )
+
+            km_por_grau_lon = 111.320 * cos(radians(lat_max))
+
+            # Evita divisão por zero em latitudes extremas
+            if km_por_grau_lon > 0:
+                alcance_lon = raio / km_por_grau_lon
+            else:
+                alcance_lon = 360.0
+
+            # Quantas células precisamos percorrer
+            alcance_y = int(np.ceil(alcance_lat / altura)) + 1
+            alcance_x = int(np.ceil(alcance_lon / largura)) + 1
+
+            # Consulta o índice: não percorre todos os entregadores
+            candidatos = set()
+
+            if geohashes is not None:
+                for x in range(-alcance_x, alcance_x + 1):
+                    for y in range(-alcance_y, alcance_y + 1):
+                        hash_vizinho = gh.geohash_neigh(
+                            hash_rest,
+                            x=x,
+                            y=y,
+                            levels=5,
+                        )
+
+                        candidatos.update(
+                            geohashes.get(hash_vizinho, [])
+                        )
+
+            # Confirma a distância real somente dos candidatos
+            for i in candidatos:
+                lat_ent, lon_ent = locais[i]
+
+                distancia = distancia_km(
+                    lat_rest,
+                    lon_rest,
+                    lat_ent,
+                    lon_ent,
+                )
+
+                dentro[i] = distancia <= raio
 
         # Entregadores fora do círculo ficam azul claro e transparentes
         fora = ~dentro
@@ -468,23 +532,24 @@ def projetar_entregadores_nas_ruas(grafo, entregadores):
 #Callback que gera os entregadores e guarda no store se clicar no botão de atualizar mapa
 @aplicativo.callback(
     Output("entregadores_store", "data"),
+    Output("geohashes_store", "data"),
     Input("atualizar-mapa", "n_clicks"),
     State("n_entregadores", "value"),
     State("dropdown_restaurantes", "value"),
 )
 def gerar_entregadores(n_clicks, n_entregadores, restaurante_id):
     if not n_clicks:
-        return []
+        return [] , {}
 
     if (n_entregadores is None or not 0 <= n_entregadores <= 50000):
-        return dash.no_update
+        return dash.no_update, dash.no_update
 
     # Escolhe restaurantes aleatórios como pontos de partida
     restaurantes_validos = tabela_restaurantes.dropna(subset=["LATITUDE", "LONGITUDE"])
     restaurantes_validos = restaurantes_validos[restaurantes_validos["LATITUDE"].between(-90, 90) & restaurantes_validos["LONGITUDE"].between(-180, 180)]
 
     if restaurantes_validos.empty and n_entregadores > 0:
-        return dash.no_update
+        return dash.no_update, dash.no_update
 
     # Cada entregador é associado a um restaurante aleatório
     escolhidos = restaurantes_validos.sample(
@@ -503,22 +568,36 @@ def gerar_entregadores(n_clicks, n_entregadores, restaurante_id):
         )
         locais.append(entregadores[0].tolist())
 
-    return projetar_entregadores_nas_ruas(grafo, locais)
+    locais = projetar_entregadores_nas_ruas(grafo, locais)
+
+    # Indexa os entregadores pelas células de Geohash
+    indice_geohash = {}
+
+    for i, (lat, lon) in enumerate(locais):
+        codigo = gh.geohash_encode(lat, lon, maxlevel=5)
+        if codigo not in indice_geohash:
+            indice_geohash[codigo] = []
+
+        indice_geohash[codigo].append(i)
+
+    return locais, indice_geohash
 
 #Callback que atualiza o mapa quando gera entregadores ou qnd muda o filtro de dist/restaurante q ta no dropdown
 @aplicativo.callback(
     Output("mapa_entrega", "figure"),
     Input("entregadores_store", "data"),
+    Input("geohashes_store", "data"),
     Input("dropdown_restaurantes", "value"),
     Input("n_km_max", "value"),
 )
-def atualizar_mapa(entregadores, restaurante_id, filtro):
+def atualizar_mapa(entregadores, geohashes, restaurante_id, filtro):
     return atualizar_o_mapa(
         0,
         entregadores,
         filtro,
         restaurante_id,
- )
+        geohashes,
+    )
 
 #Callback que busca restaurantes pesquisa a pesquisa pra n engasgar com >>>>20K de linhas<<<<< de restaurantes
 @aplicativo.callback(

@@ -1,82 +1,139 @@
-# Tabela de Base32 para consultar
-code_table = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'j', 'k', 'm', 'n', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
 
-# Função para obter o geohash de uma coordenada
-def geohash_encode(lat:float, lon:float, maxlevel=8):
-    is_odd = False
-    latmin, latmax = [-90.0, 90.0]
-    lonmin, lonmax = [-180.0, 180.0]
-    latoffset = 0.0
-    lonoffset = 0.0
-    prefix = ""
-    bitsequence = 0
+# Tabela Base32 do Geohash
+code_table = [
+    '0', '1', '2', '3', '4', '5', '6', '7',
+    '8', '9', 'b', 'c', 'd', 'e', 'f', 'g',
+    'h', 'j', 'k', 'm', 'n', 'p', 'q', 'r',
+    's', 't', 'u', 'v', 'w', 'x', 'y', 'z'
+]
 
-    for i in range(maxlevel):
-        for j in range(5):
-            
-            bitsequence = bitsequence << 1
-            is_odd = not is_odd
 
-            if is_odd:     # Longitude
-                lonmax /= 2
-                lonmin /= 2
-                if lon - lonoffset >= 0.0:
-                    bitsequence |= 1
-                    lonoffset += lonmax
-                else:
-                    lonoffset += lonmin
+# Codifica latitude e longitude em um Geohash
+def geohash_encode(lat: float, lon: float, maxlevel=8):
+    if not -90 <= lat <= 90:
+        raise ValueError("Latitude deve estar entre -90 e 90.")
 
-            else:           # Latitude
-                latmax /= 2
-                latmin /= 2
-                if lat - latoffset >= 0.0:
-                    bitsequence |= 1
-                    latoffset += latmax
-                else:
-                    latoffset += latmin
+    if not -180 <= lon <= 180:
+        raise ValueError("Longitude deve estar entre -180 e 180.")
 
-        prefix += code_table[bitsequence]
-        bitsequence = 0
+    if not isinstance(maxlevel, int) or maxlevel < 1:
+        raise ValueError("maxlevel deve ser um inteiro positivo.")
 
-    return prefix
+    latmin, latmax = -90.0, 90.0
+    lonmin, lonmax = -180.0, 180.0
 
-# Função para obter as coordenadas a partir de um geohash
+    geohash = ""
+    bits = 0
+    bit_count = 0
+    is_lon = True
+
+    for _ in range(maxlevel * 5):
+        bits <<= 1
+
+        if is_lon:
+            meio = (lonmin + lonmax) / 2
+
+            if lon >= meio:
+                bits |= 1
+                lonmin = meio
+            else:
+                lonmax = meio
+
+        else:
+            meio = (latmin + latmax) / 2
+
+            if lat >= meio:
+                bits |= 1
+                latmin = meio
+            else:
+                latmax = meio
+
+        is_lon = not is_lon
+        bit_count += 1
+
+        if bit_count == 5:
+            geohash += code_table[bits]
+            bits = 0
+            bit_count = 0
+
+    return geohash
+
+
+# Decodifica o Geohash e retorna o centro da célula
 def geohash_decode(geohash):
-    lat = 0.0
-    lon = 0.0
-    latmin, latmax = [-90.0, 90.0]
-    lonmin, lonmax = [-180.0, 180.0]
-    is_odd = True
+    if not isinstance(geohash, str) or not geohash:
+        raise ValueError("O Geohash deve ser uma string não vazia.")
 
-    for c in geohash:
-        idx = code_table.index(c)
+    latmin, latmax = -90.0, 90.0
+    lonmin, lonmax = -180.0, 180.0
 
-        i = 4
-        while i >= 0:
-            val = (idx & (1 << i)) >> i     # extrai o bit de interesse para a análise
+    is_lon = True
 
-            if is_odd:  # Longitude
-                lonmax /= 2
-                lonmin /= 2
-                if val > 0:
-                    lon += lonmax
+    for c in geohash.lower():
+        if c not in code_table:
+            raise ValueError(f"Caractere inválido no Geohash: {c}")
+
+        valor = code_table.index(c)
+
+        for i in range(4, -1, -1):
+            bit = (valor >> i) & 1
+
+            if is_lon:
+                meio = (lonmin + lonmax) / 2
+
+                if bit:
+                    lonmin = meio
                 else:
-                    lon += lonmin
+                    lonmax = meio
 
-            else:       # Latitude
-                latmax /= 2
-                latmin /= 2
-                if val > 0:
-                    lat += latmax
+            else:
+                meio = (latmin + latmax) / 2
+
+                if bit:
+                    latmin = meio
                 else:
-                    lat += latmin
+                    latmax = meio
 
-            is_odd = not is_odd
-            i -= 1
+            is_lon = not is_lon
+
+    lat = (latmin + latmax) / 2
+    lon = (lonmin + lonmax) / 2
 
     return lat, lon
 
-# Função para achar a vizinhança de algum geohash
-def geohash_neigh(geohash, x=1, y=0, levels=8):
-    
-    return
+
+# Retorna a célula vizinha.
+# x: deslocamento horizontal
+# y: deslocamento vertical
+def geohash_neigh(geohash, x=0, y=0, levels=8):
+    if not isinstance(levels, int) or levels < 1:
+        raise ValueError("levels deve ser um inteiro positivo.")
+
+    if len(geohash) < levels:
+        raise ValueError("O Geohash é menor que levels.")
+
+    if not isinstance(x, int) or not isinstance(y, int):
+        raise ValueError("x e y devem ser inteiros.")
+
+    geohash = geohash[:levels].lower()
+
+    lat, lon = geohash_decode(geohash)
+
+    total_bits = levels * 5
+    lon_bits = (total_bits + 1) // 2
+    lat_bits = total_bits // 2
+
+    altura = 180.0 / (2 ** lat_bits)
+    largura = 360.0 / (2 ** lon_bits)
+
+    # Move pelo número de células solicitado
+    lat += y * altura
+    lon += x * largura
+
+    # A latitude não pode ultrapassar os polos
+    lat = max(-90.0, min(90.0, lat))
+
+    # A longitude dá a volta ao cruzar o antimeridiano
+    lon = ((lon + 180.0) % 360.0) - 180.0
+
+    return geohash_encode(lat, lon, maxlevel=levels)

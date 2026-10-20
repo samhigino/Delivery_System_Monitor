@@ -54,4 +54,4 @@ O programa foi testado para Python 3.13.15. Não podemos garantir que a execuç�
     - Confira se todos os arquivos foram gerados em ```data/processed/``` corretamente.
 
 3. **Execução principal**
-    - Execute o script ```scripts/main.py```;
+    - Execute o script ```scripts/interface.py```;
