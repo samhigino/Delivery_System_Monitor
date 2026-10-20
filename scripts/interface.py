@@ -10,6 +10,7 @@ from dash import Input, Output, State, dcc, html
 from shapely.geometry import Point
 from math import radians, sin, cos, sqrt, atan2
 from pyproj import Transformer
+from trie import Trie
 
 #+#=#+#=#+#=#+#=#+#
 #+#=#  MALHA  #+#=# 
@@ -365,6 +366,11 @@ def atualizar_o_mapa(n_clicks, entregadores, filtro, restaurante_id,geohashes=No
         dentro = np.zeros(len(locais), dtype=bool)
 
         if restaurante_id is not None and filtro is not None:
+            trie_geohash = Trie()
+            if geohashes is not None:
+                for codigo in geohashes["hashes"]:
+                    trie_geohash.insert(codigo)
+
             lat_rest = float(centro["lat"])
             lon_rest = float(centro["lon"])
             raio = float(filtro)
@@ -408,28 +414,21 @@ def atualizar_o_mapa(n_clicks, entregadores, filtro, restaurante_id,geohashes=No
             if geohashes is not None:
                 for x in range(-alcance_x, alcance_x + 1):
                     for y in range(-alcance_y, alcance_y + 1):
-                        hash_vizinho = gh.geohash_neigh(
-                            hash_rest,
-                            x=x,
-                            y=y,
-                            levels=5,
+                        vizinho = gh.geohash_neigh(
+                            hash_rest, x=x, y=y, levels=5
                         )
 
-                        candidatos.update(
-                            geohashes.get(hash_vizinho, [])
-                        )
+                        if trie_geohash.lookup(vizinho):
+                            candidatos.update(
+                                geohashes["indices"].get(vizinho, [])
+                            )
 
-            # Confirma a distância real somente dos candidatos
+            # Confirma a distância real dos candidatos
             for i in candidatos:
                 lat_ent, lon_ent = locais[i]
-
                 distancia = distancia_km(
-                    lat_rest,
-                    lon_rest,
-                    lat_ent,
-                    lon_ent,
+                    lat_rest, lon_rest, lat_ent, lon_ent
                 )
-
                 dentro[i] = distancia <= raio
 
         # Entregadores fora do círculo ficam azul claro e transparentes
@@ -539,7 +538,7 @@ def projetar_entregadores_nas_ruas(grafo, entregadores):
 )
 def gerar_entregadores(n_clicks, n_entregadores, restaurante_id):
     if not n_clicks:
-        return [] , {}
+        return [], {"hashes": [], "indices": {}}
 
     if (n_entregadores is None or not 0 <= n_entregadores <= 50000):
         return dash.no_update, dash.no_update
@@ -572,15 +571,21 @@ def gerar_entregadores(n_clicks, n_entregadores, restaurante_id):
 
     # Indexa os entregadores pelas células de Geohash
     indice_geohash = {}
+    trie_geohash = Trie()
 
     for i, (lat, lon) in enumerate(locais):
         codigo = gh.geohash_encode(lat, lon, maxlevel=5)
+
         if codigo not in indice_geohash:
             indice_geohash[codigo] = []
+            trie_geohash.insert(codigo)
 
         indice_geohash[codigo].append(i)
 
-    return locais, indice_geohash
+    return locais, {
+        "hashes": list(indice_geohash.keys()),
+        "indices": indice_geohash
+}
 
 #Callback que atualiza o mapa quando gera entregadores ou qnd muda o filtro de dist/restaurante q ta no dropdown
 @aplicativo.callback(
