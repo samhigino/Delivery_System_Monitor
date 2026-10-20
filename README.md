@@ -42,11 +42,16 @@ O programa foi testado para Python 3.13.15. Não podemos garantir que a execuç�
     - Instale todas as bibliotecas especificadas em requirements.txt abrindo o prompt de comando e digitando ```pip install -r``` 
 
 2. **Processamento de Dados**
-(Recomendamos pular esta parte e usar os dados que já estão disponibilizados no repositório. Mas caso seja de interesse do usuário obter os dados processados a partir dos dados brutos, siga os passos abaixo.)
+(Recomendamos pular esta parte e usar os dados que já estão disponibilizados no repositório. Mas, caso seja de interesse do usuário obter os dados processados a partir dos dados brutos, siga os passos abaixo.)
     - Apague todos os arquivos dentro de ```data/processed/```;
+    - Acesse o site da [Geocoding API](https://geocode.maps.co/docs/);
+    - Faça login ou crie uma conta e copie a sua chave secreta da API;
     - Acesse o notebook em ```notebooks/data_process.ipynb```;
-    - Execute as células uma a uma, em ordem - se desejar, confira a saída de cada uma para ver os passos intermediários;
-    - Confira se todos os arquivos foram gerados em ```data/processed/``` corretamente. A execução pode levar um tempo.
+    - Vá executando as células uma a uma, em ordem - se desejar, confira a saída de cada uma para ver os passos intermediários - até chegar na seção 2 do notebook;
+    - Na segunda célula da seção 2 (depois dos imports), coloque a sua chave da API entre as aspas duplas onde está escrito ```api_key = ""```;
+    - Verifique no site da Geocoding se você tem acesso às 25 mil pesquisas rápidas gratuitas. Caso você tenha, siga para a próxima instrução. Caso não, onde está escrito ```sleep_time = 0.25```, substitua 0.25 por 1;
+    - Execute o restante das células em ordem. A primeira célula logo após a do passo anterior demora muito para executar, então recomenda-se deixar o computador trabalhando nisto em segundo plano;
+    - Confira se todos os arquivos foram gerados em ```data/processed/``` corretamente.
 
 3. **Execução principal**
     - Execute o script ```scripts/main.py```;
