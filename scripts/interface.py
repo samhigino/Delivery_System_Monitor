@@ -111,7 +111,7 @@ aplicativo.layout = html.Div(
                         placeholder="Digite a quantidade de entregadores", 
                         type="number",
                         min=0,
-                        max=2000,
+                        max=10000,
                         step=1,
                         style={
                             "width": "400px",
@@ -256,8 +256,8 @@ def distancia_km(latitude_p, longitude_p, latitude_s, longitude_s):   #Calculo d
 
     deltalat = latitude_s - latitude_p
     deltalon = longitude_s - longitude_p
-    qtroçoéesse = (sin(deltalat / 2) ** 2 + cos(latitude_p) * cos(latitude_s) * sin(deltalon / 2) ** 2) #Formula que calcula a distancia entre dois pontos no globo, n tenho a MINIMA ideia como funfa so aceitei
-    return 2 * raio_total * atan2(sqrt(qtroçoéesse), sqrt(1 - qtroçoéesse)) #Coitado de qm teve q pensar isso pela primeira vez
+    qtrocoehesse = (sin(deltalat / 2) ** 2 + cos(latitude_p) * cos(latitude_s) * sin(deltalon / 2) ** 2) #Formula que calcula a distancia entre dois pontos no globo, n tenho a MINIMA ideia como funfa so aceitei
+    return 2 * raio_total * atan2(sqrt(qtrocoehesse), sqrt(1 - qtrocoehesse)) #Coitado de qm teve q pensar isso pela primeira vez
 
 #Função básica que atualiza o mapa de acordo com os estados das estruturas do html
 def atualizar_o_mapa(n_clicks, entregadores, filtro, restaurante_id,geohashes=None):
