@@ -29,7 +29,8 @@ O sistema deve permitir, em tempo razoável, ao usuário:
 │ ├─ geohash.py             # codificação e decoficação de geohash
 │ ├─ trie.py                # implementação da trie e pesquisa por proximidade
 │ └─ interface.py           # programa principal
-└─ requirements.txt # Pré-requisitos de python para executar o programa
+├─ requirements.txt # Pré-requisitos de python para executar o programa
+└─ relatório.pdf
 ```
 
 ---
@@ -39,17 +40,14 @@ O sistema deve permitir, em tempo razoável, ao usuário:
 **⚠️ ATENÇÃO:** O programa foi testado para Python 3.13.15. Não podemos garantir que a execução será exata em outras versões.
 
 1. **Pré-requisitos**
+(Caso deseje instalar todas as dependências no seu kernel de Python e não usar venv, execute apenas o último passo.)
 
-1.1. Caso queira instalar as bibliotecas direto no seu Python:
-    - Instale todas as dependências abrindo o prompt de comando no diretório principal do projeto e digitando ```pip install -r requirements.txt```;
-
-1.2. Caso queira usar um ambiente virtual venv:
     - Crie o ambiente virtual abrindo o prompt de comando no diretório principal do projeto e digitando ```python -m venv venv```;
     - Ative o ambiente virtual, usando o comando relativo ao seu sistema:
         - **Windows (PowerShell):** ```.\venv\Scripts\Activate.ps1```;
-        - **Windows (CMD):** ```.\venv\Scripts\activate.bat`
-        - **Linux/macOS:** ```source venv/bin/activate``
-    - Instale as dependências usando ```pip install -r requirements.txt```.
+        - **Windows (CMD):** ```.\venv\Scripts\activate.bat```
+        - **Linux/macOS:** ```source venv/bin/activate```
+    - Instale as dependências abrindo o prompt de comando no diretório principal do projeto e digitando ```pip install -r requirements.txt```.
 
 2. **Processamento de Dados**
 (Recomendamos pular esta parte e usar os dados que já estão disponibilizados no repositório. Mas, caso seja de interesse do usuário obter os dados processados a partir dos dados brutos, siga os passos abaixo.)
